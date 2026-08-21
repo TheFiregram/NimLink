@@ -1,0 +1,14 @@
+node_modules
+.vercel
+dist
+.output
+screenshots
+artifacts
+*.log
+.env
+.env.*
+.DS_Store
+AGENTS.md
+AGENTS.project.md
+.grok/*
+!.grok/app-env.json

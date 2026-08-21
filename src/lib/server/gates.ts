@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getSql } from "@/lib/db";
 import { newId, newSlug } from "@/lib/utils";
+import { PREVIEW_WALLETS } from "@/lib/wallets";
 
 const currencySchema = z.enum(["NIM", "USDT"]);
 
@@ -46,6 +47,28 @@ type GateRow = {
   created_at: string;
 };
 
+const STARTER_ROW: GateRow = {
+  id: "gate_starter",
+  slug: "starter",
+  title: "Cycle 2 scoring kit",
+  preview:
+    "A one-page brief: scoresheet, 40-second demo script, and copy you can steal for Sip & Ship.",
+  price_amount: "2",
+  price_currency: "USDT",
+  creator_wallet: PREVIEW_WALLETS.creator.address,
+  access_opens: 3,
+  access_days: 7,
+  paused: false,
+  view_count: 0,
+  sale_count: 0,
+  created_at: "2026-08-21T00:00:00+00",
+};
+
+function dbUnavailable(err: unknown) {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /pglite\.data|ENOENT|DATABASE_URL|ECONNREFUSED/i.test(msg);
+}
+
 function toPublic(row: GateRow): PublicGate {
   return {
     id: row.id,
@@ -71,12 +94,17 @@ const publicSelect = `
 `;
 
 async function loadGateBySlug(slug: string) {
-  const sql = await getSql();
-  const rows = await sql.query<GateRow>(
-    `select ${publicSelect} from gates where slug = $1`,
-    [slug],
-  );
-  return rows[0] ?? null;
+  try {
+    const sql = await getSql();
+    const rows = await sql.query<GateRow>(
+      `select ${publicSelect} from gates where slug = $1`,
+      [slug],
+    );
+    return rows[0] ?? (slug === "starter" ? STARTER_ROW : null);
+  } catch (err) {
+    if (slug === "starter" && dbUnavailable(err)) return STARTER_ROW;
+    throw err;
+  }
 }
 
 export const createGate = createServerFn({ method: "POST" })
@@ -131,7 +159,14 @@ export const createGate = createServerFn({ method: "POST" })
       }
     }
 
-    const sql = await getSql();
+    const sql = await getSql().catch((err) => {
+      if (dbUnavailable(err)) {
+        throw new Error(
+          "Latches need a Postgres DATABASE_URL (Neon) in the Vercel project.",
+        );
+      }
+      throw err;
+    });
     const id = newId("gate");
     const slug = newSlug();
     await sql.query(
@@ -166,11 +201,16 @@ export const getGate = createServerFn({ method: "GET" })
     const row = await loadGateBySlug(data.slug);
     if (!row) return null;
     if (data.countView === false) return toPublic(row);
-    const sql = await getSql();
-    await sql.query(`update gates set view_count = view_count + 1 where id = $1`, [
-      row.id,
-    ]);
-    return toPublic({ ...row, view_count: row.view_count + 1 });
+    try {
+      const sql = await getSql();
+      await sql.query(`update gates set view_count = view_count + 1 where id = $1`, [
+        row.id,
+      ]);
+      return toPublic({ ...row, view_count: row.view_count + 1 });
+    } catch (err) {
+      if (dbUnavailable(err)) return toPublic(row);
+      throw err;
+    }
   });
 
 export const getAccess = createServerFn({ method: "GET" })
@@ -192,7 +232,22 @@ export const getAccess = createServerFn({ method: "GET" })
         reason: "missing",
       };
     }
-    const sql = await getSql();
+    const sql = await getSql().catch((err) => {
+      if (dbUnavailable(err)) {
+        return null;
+      }
+      throw err;
+    });
+    if (!sql) {
+      return {
+        purchased: false,
+        refunded: false,
+        canOpen: false,
+        remainingOpens: 0,
+        expiresAt: null,
+        reason: "missing",
+      };
+    }
     const wallet = data.wallet.replace(/\s+/g, "");
     const purchases = await sql.query<{
       id: string;

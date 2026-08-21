@@ -4,6 +4,8 @@ Put a price on any link. Buyers pay in NIM or USDT — their wallet is the key.
 
 A [Nimiq Pay](https://www.nimiq.com) Mini App for Cycle 2 of the Mini Apps Competition.
 
+**Live:** [nimlink.vercel.app](https://nimlink.vercel.app)
+
 ## What it does
 
 1. Paste a URL (Notion, Drive, Figma, a PDF).
@@ -17,6 +19,10 @@ A [Nimiq Pay](https://www.nimiq.com) Mini App for Cycle 2 of the Mini Apps Compe
 npm install
 npm run dev
 ```
+
+## Production
+
+Vercel project: `nimlink`. Persist latches by setting `DATABASE_URL` (Neon Postgres) in the project’s environment variables.
 
 ## License
 

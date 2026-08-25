@@ -2,14 +2,16 @@ import type { ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, EyeOff, KeyRound, Link2 } from "lucide-react";
 import { CreateForm } from "@/components/create-form";
+import { HexagonMark } from "@/components/hexagon";
 
 export const Route = createFileRoute("/")({ component: Home });
 
 function Home() {
   return (
     <div className="space-y-14">
-      <section className="space-y-5">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted">
+      <section className="relative space-y-5 overflow-hidden">
+        <HexagonMark className="pointer-events-none absolute -right-8 -top-10 size-40 text-accent/12 sm:-right-4 sm:size-52" />
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
           Mini App · Nimiq Pay
         </p>
         <h1 className="max-w-xl font-display text-[2.5rem] leading-[1.1] tracking-[-0.03em] sm:text-5xl">
@@ -78,10 +80,10 @@ function Step({
   return (
     <li className="rounded-[var(--radius-lg)] bg-surface p-4 shadow-[var(--shadow-border)]">
       <div className="mb-4 flex items-center justify-between text-muted">
-        <span className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-elevated">
+        <span className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-elevated text-accent">
           {icon}
         </span>
-        <span className="font-mono text-[11px] tracking-widest">{n}</span>
+        <span className="font-mono text-[11px] tracking-widest text-accent/80">{n}</span>
       </div>
       <h3 className="font-display text-lg tracking-tight">{title}</h3>
       <p className="mt-1.5 text-sm leading-relaxed text-muted">{body}</p>

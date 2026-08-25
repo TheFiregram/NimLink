@@ -3,34 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { PREVIEW_WALLETS } from "@/lib/wallets";
 import { useWallet } from "@/lib/wallet-context";
 import { maskWallet, cn } from "@/lib/utils";
-
-function LatchMark({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      aria-hidden="true"
-    >
-      <rect
-        x="4.5"
-        y="8"
-        width="15"
-        height="11"
-        rx="2.5"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <path
-        d="M8 8V6.5a4 4 0 0 1 8 0V8"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-      <rect x="10.5" y="12" width="3" height="4" rx="1" fill="currentColor" />
-    </svg>
-  );
-}
+import { HexagonMark } from "@/components/hexagon";
 
 export function Shell({ children }: { children: ReactNode }) {
   const { address, role, setRole, isPayHost, ready } = useWallet();
@@ -40,7 +13,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-border/80 bg-bg/90 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2 text-fg">
-            <LatchMark className="size-5" />
+            <HexagonMark className="size-5" />
             <span className="font-display text-lg tracking-tight">NimLink</span>
           </Link>
           <nav className="flex items-center gap-1">

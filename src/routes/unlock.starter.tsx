@@ -7,7 +7,7 @@ export const Route = createFileRoute("/unlock/starter")({
 function StarterKit() {
   return (
     <article className="space-y-8 pb-8">
-      <p className="text-xs font-medium uppercase tracking-[0.18em] text-success">
+      <p className="text-xs font-medium uppercase tracking-[0.18em] text-accent">
         Unlocked
       </p>
       <h1 className="font-display text-4xl leading-tight tracking-tight">

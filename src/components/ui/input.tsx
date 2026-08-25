@@ -6,7 +6,7 @@ import type {
 import { cn } from "@/lib/utils";
 
 const fieldClass =
-  "w-full rounded-[var(--radius-sm)] bg-elevated px-3.5 text-fg shadow-[var(--shadow-border)] placeholder:text-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg disabled:opacity-50";
+  "w-full rounded-[var(--radius-sm)] bg-elevated px-3.5 text-fg shadow-[var(--shadow-border)] placeholder:text-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50";
 
 export function Input({
   className,

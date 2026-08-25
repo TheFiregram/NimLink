@@ -18,7 +18,7 @@ export const Route = createRootRoute({
         name: "description",
         content: "Put a price on any link. Buyers pay in NIM or USDT — their wallet is the key.",
       },
-      { name: "theme-color", content: "#0c0c0b" },
+      { name: "theme-color", content: "#12100a" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -54,9 +54,9 @@ function RootDocument() {
               position="top-center"
               toastOptions={{
                 style: {
-                  background: "#1c1c18",
-                  color: "#f2efe6",
-                  border: "1px solid #2a2a28",
+                  background: "#241f12",
+                  color: "#f7f1de",
+                  border: "1px solid #3a3318",
                 },
               }}
             />

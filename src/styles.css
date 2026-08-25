@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #0c0c0b;
-  --color-surface: #141412;
-  --color-elevated: #1c1c18;
-  --color-fg: #f2efe6;
-  --color-muted: #a8a49a;
-  --color-subtle: #6f6c64;
-  --color-accent: #f2efe6;
-  --color-accent-fg: #0c0c0b;
-  --color-border: #2a2a28;
-  --color-border-strong: #3d3d38;
+  --color-bg: #12100a;
+  --color-surface: #1a170e;
+  --color-elevated: #241f12;
+  --color-fg: #f7f1de;
+  --color-muted: #c4b896;
+  --color-subtle: #8a7e5c;
+  --color-accent: #eaaa15;
+  --color-accent-fg: #1a1400;
+  --color-border: #3a3318;
+  --color-border-strong: #5c4e1a;
   --color-danger: #c45c4a;
   --color-success: #7d9a78;
 
@@ -24,7 +24,7 @@
   --radius-lg: 20px;
   --radius-xl: 28px;
 
-  --shadow-border: 0 0 0 1px rgb(242 239 230 / 0.08);
+  --shadow-border: 0 0 0 1px rgb(234 170 21 / 0.14);
 }
 
 @layer base {
@@ -59,8 +59,8 @@
   }
 
   ::selection {
-    background: var(--color-fg);
-    color: var(--color-bg);
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
   }
 }
 

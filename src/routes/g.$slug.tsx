@@ -166,7 +166,11 @@ function GatePage() {
         ) : null}
 
         <dl className="mt-6 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <Meta label="Price" value={formatPrice(gate.priceAmount, gate.priceCurrency)} />
+          <Meta
+            label="Price"
+            value={formatPrice(gate.priceAmount, gate.priceCurrency)}
+            accent
+          />
           <Meta label="Opens" value={`${gate.accessOpens} / ${gate.accessDays}d`} />
           <Meta label="Sales" value={String(gate.saleCount)} />
           <Meta label="Creator" value={maskWallet(gate.creatorWallet)} />
@@ -327,11 +331,21 @@ function GatePage() {
   );
 }
 
-function Meta({ label, value }: { label: string; value: string }) {
+function Meta({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
   return (
     <div className="rounded-[var(--radius-md)] bg-elevated px-3 py-2.5">
       <dt className="text-[11px] uppercase tracking-[0.14em] text-subtle">{label}</dt>
-      <dd className="mt-1 font-medium tabular-nums">{value}</dd>
+      <dd className={`mt-1 font-medium tabular-nums ${accent ? "text-accent" : ""}`}>
+        {value}
+      </dd>
     </div>
   );
 }

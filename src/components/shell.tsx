@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { PREVIEW_WALLETS } from "@/lib/wallets";
 import { useWallet } from "@/lib/wallet-context";
 import { maskWallet, cn } from "@/lib/utils";
-import { HexagonMark } from "@/components/hexagon";
+import { NimlinkWordmark } from "@/components/paperclip";
 
 export function Shell({ children }: { children: ReactNode }) {
   const { address, role, setRole, isPayHost, ready } = useWallet();
@@ -12,9 +12,8 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="min-h-dvh bg-bg text-fg">
       <header className="sticky top-0 z-30 border-b border-border/80 bg-bg/90 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2 text-fg">
-            <HexagonMark className="size-5" />
-            <span className="font-display text-lg tracking-tight">NimLink</span>
+          <Link to="/" aria-label="Nimlink home" className="text-fg">
+            <NimlinkWordmark className="text-[17px]" />
           </Link>
           <nav className="flex items-center gap-1">
             <Link

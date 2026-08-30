@@ -1,10 +1,12 @@
-# NimLink
+# Nimlink
 
 Put a price on any link. Buyers pay in NIM or USDT — their wallet is the key.
 
 A [Nimiq Pay](https://www.nimiq.com) Mini App for Cycle 2 of the Mini Apps Competition.
 
 **Live:** [nimlink.vercel.app](https://nimlink.vercel.app)
+
+The full product, brand, flows, data model, and scoring notes: **[NIMLINK.md](NIMLINK.md)**.
 
 ## What it does
 

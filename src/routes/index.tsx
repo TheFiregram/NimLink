@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, EyeOff, KeyRound, Link2 } from "lucide-react";
 import { CreateForm } from "@/components/create-form";
-import { HexagonMark } from "@/components/hexagon";
+import { PaperclipMark } from "@/components/paperclip";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -10,7 +10,7 @@ function Home() {
   return (
     <div className="space-y-14">
       <section className="relative space-y-5 overflow-hidden">
-        <HexagonMark className="pointer-events-none absolute -right-8 -top-10 size-40 text-accent/12 sm:-right-4 sm:size-52" />
+        <PaperclipMark className="pointer-events-none absolute -right-16 top-2 h-28 w-auto text-accent/15 sm:-right-8 sm:h-36" />
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
           Mini App · Nimiq Pay
         </p>

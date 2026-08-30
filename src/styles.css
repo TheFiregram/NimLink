@@ -7,7 +7,7 @@
   --color-fg: #f7f1de;
   --color-muted: #c4b896;
   --color-subtle: #8a7e5c;
-  --color-accent: #eaaa15;
+  --color-accent: #e9b114;
   --color-accent-fg: #1a1400;
   --color-border: #3a3318;
   --color-border-strong: #5c4e1a;
@@ -24,7 +24,7 @@
   --radius-lg: 20px;
   --radius-xl: 28px;
 
-  --shadow-border: 0 0 0 1px rgb(234 170 21 / 0.14);
+  --shadow-border: 0 0 0 1px rgb(233 177 20 / 0.14);
 }
 
 @layer base {

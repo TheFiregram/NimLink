@@ -15,6 +15,7 @@ import {
   type PublicGate,
 } from "@/lib/server/gates";
 import { useWallet } from "@/lib/wallet-context";
+import { sendNimPayment } from "@/lib/nimiq";
 import { formatPrice, maskWallet } from "@/lib/utils";
 import { PREVIEW_WALLETS } from "@/lib/wallets";
 
@@ -28,34 +29,27 @@ export const Route = createFileRoute("/g/$slug")({
     <div className="space-y-3 py-16 text-center">
       <h1 className="font-display text-3xl">No latch here</h1>
       <p className="text-muted">That link is dead or was never created.</p>
-      <Button asChild variant="secondary">
-        <Link to="/">Back</Link>
-      </Button>
+      <Button asChild variant="secondary"><Link to="/">Back</Link></Button>
     </div>
   ),
   component: GatePage,
 });
 
+type ViewerState =
+  | { kind: "internal"; url: string }
+  | { kind: "html"; html: string };
+
 function GatePage() {
   const { gate: initial } = Route.useLoaderData();
   const { slug } = Route.useParams();
-  const { address, role, setRole } = useWallet();
+  const { address, role, setRole, isPayHost } = useWallet();
   const [gate, setGate] = useState<PublicGate>(initial);
   const [access, setAccess] = useState<AccessState | null>(null);
-  const [sales, setSales] = useState<
-    Array<{
-      id: string;
-      buyerWallet: string;
-      amount: string;
-      currency: string;
-      createdAt: string;
-      refunded: boolean;
-      opens: number;
-    }>
-  >([]);
+  const [sales, setSales] = useState<Array<{ id: string; buyerWallet: string; amount: string; currency: string; createdAt: string; refunded: boolean; opens: number }>>([]);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
+  const [viewer, setViewer] = useState<ViewerState | null>(null);
 
   const isCreator = address === gate.creatorWallet;
 
@@ -68,8 +62,7 @@ function GatePage() {
     setAccess(nextAccess);
     if (address === (nextGate ?? gate).creatorWallet) {
       try {
-        const rows = await listSales({ data: { slug, wallet: address } });
-        setSales(rows);
+        setSales(await listSales({ data: { slug, wallet: address } }));
       } catch {
         setSales([]);
       }
@@ -84,8 +77,7 @@ function GatePage() {
   }, [address, slug]);
 
   async function copyLink() {
-    const url = `${window.location.origin}/g/${slug}`;
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(`${window.location.origin}/g/${slug}`);
     setCopied(true);
     toast.success("Link copied.");
     setTimeout(() => setCopied(false), 1600);
@@ -94,8 +86,12 @@ function GatePage() {
   async function confirmPay() {
     setBusy(true);
     try {
-      await payGate({ data: { slug, buyerWallet: address } });
-      toast.success("Paid. Your wallet is now the key.");
+      let txHash = `preview:${Date.now()}`;
+      if (isPayHost) {
+        txHash = await sendNimPayment(gate.creatorWallet, gate.priceAmount);
+      }
+      await payGate({ data: { slug, buyerWallet: address, txHash } });
+      toast.success(isPayHost ? "NIM payment confirmed. Wallet access granted." : "Demo payment confirmed. Wallet access granted.");
       setPayOpen(false);
       await refresh();
     } catch (err) {
@@ -110,10 +106,10 @@ function GatePage() {
     try {
       const result = await openGate({ data: { slug, buyerWallet: address } });
       await refresh();
-      if (result.url.startsWith("/")) {
-        window.location.assign(result.url);
+      if (result.kind === "internal") {
+        setViewer(result);
       } else {
-        window.open(result.url, "_blank", "noopener,noreferrer");
+        setViewer({ kind: "html", html: result.html });
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not open.");
@@ -147,30 +143,43 @@ function GatePage() {
     }
   }
 
+  if (viewer) {
+    if (viewer.kind === "internal") {
+      window.location.assign(viewer.url);
+      return null;
+    }
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.16em] text-muted">Wallet protected</p>
+            <h1 className="mt-1 font-display text-2xl">{gate.title}</h1>
+          </div>
+          <Button variant="secondary" onClick={() => setViewer(null)}>Back</Button>
+        </div>
+        <div
+          className="prose prose-invert max-w-none overflow-hidden rounded-[var(--radius-xl)] bg-surface p-5 shadow-[var(--shadow-border)]"
+          dangerouslySetInnerHTML={{ __html: viewer.html }}
+        />
+        <p className="text-center text-xs text-muted">
+          This content was fetched server-side after your NIM purchase. The original destination is never sent to the browser.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="rounded-[var(--radius-xl)] bg-surface p-6 shadow-[var(--shadow-border)] sm:p-8">
         <div className="flex items-start justify-between gap-3">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted">
-            {gate.paused ? "Paused" : "Locked link"}
-          </p>
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted">{gate.paused ? "Paused" : "Locked link"}</p>
           <span className="font-mono text-[11px] text-subtle">{slug}</span>
         </div>
-        <h1 className="mt-4 font-display text-3xl leading-tight tracking-tight sm:text-4xl">
-          {gate.title}
-        </h1>
-        {gate.preview ? (
-          <p className="mt-3 max-w-prose text-base leading-relaxed text-muted">
-            {gate.preview}
-          </p>
-        ) : null}
+        <h1 className="mt-4 font-display text-3xl leading-tight tracking-tight sm:text-4xl">{gate.title}</h1>
+        {gate.preview ? <p className="mt-3 max-w-prose text-base leading-relaxed text-muted">{gate.preview}</p> : null}
 
         <dl className="mt-6 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <Meta
-            label="Price"
-            value={formatPrice(gate.priceAmount, gate.priceCurrency)}
-            accent
-          />
+          <Meta label="Price" value={formatPrice(gate.priceAmount, "NIM")} accent />
           <Meta label="Opens" value={`${gate.accessOpens} / ${gate.accessDays}d`} />
           <Meta label="Sales" value={String(gate.saleCount)} />
           <Meta label="Creator" value={maskWallet(gate.creatorWallet)} />
@@ -183,59 +192,32 @@ function GatePage() {
                 {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
                 {copied ? "Copied" : "Copy link"}
               </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                disabled={busy}
-                onClick={() => onPause(!gate.paused)}
-              >
+              <Button variant="secondary" size="lg" disabled={busy} onClick={() => onPause(!gate.paused)}>
                 {gate.paused ? "Resume" : "Pause"}
               </Button>
             </>
           ) : access?.canOpen ? (
             <Button onClick={onOpen} disabled={busy} size="lg" className="flex-1">
-              <Unlock className="size-4" />
-              Open · {access.remainingOpens} left
+              <Unlock className="size-4" /> Open protected content · {access.remainingOpens} left
             </Button>
           ) : access?.purchased && access.reason === "opens_exhausted" ? (
-            <Button disabled size="lg" className="flex-1" variant="secondary">
-              Opens used up
-            </Button>
+            <Button disabled size="lg" className="flex-1" variant="secondary">Opens used up</Button>
           ) : access?.purchased && access.reason === "expired" ? (
-            <Button disabled size="lg" className="flex-1" variant="secondary">
-              Access expired
-            </Button>
+            <Button disabled size="lg" className="flex-1" variant="secondary">Access expired</Button>
           ) : access?.refunded ? (
-            <Button disabled size="lg" className="flex-1" variant="secondary">
-              Refunded
-            </Button>
+            <Button disabled size="lg" className="flex-1" variant="secondary">Refunded</Button>
           ) : gate.paused ? (
-            <Button disabled size="lg" className="flex-1" variant="secondary">
-              Paused by creator
-            </Button>
+            <Button disabled size="lg" className="flex-1" variant="secondary">Paused by creator</Button>
           ) : (
-            <Button
-              onClick={() => setPayOpen(true)}
-              size="lg"
-              className="flex-1"
-            >
-              <Lock className="size-4" />
-              Pay {formatPrice(gate.priceAmount, gate.priceCurrency)}
+            <Button onClick={() => setPayOpen(true)} size="lg" className="flex-1">
+              <Lock className="size-4" /> Pay {formatPrice(gate.priceAmount, "NIM")}
             </Button>
           )}
         </div>
 
-        {!isCreator && !access?.purchased && role === "creator" && (
+        {!isCreator && !access?.purchased && role === "creator" && !isPayHost && (
           <p className="mt-4 text-sm text-muted">
-            You are on the Creator wallet.{" "}
-            <button
-              type="button"
-              className="underline decoration-border-strong underline-offset-4 hover:text-fg"
-              onClick={() => setRole("buyer")}
-            >
-              Switch to Buyer
-            </button>{" "}
-            to pay this latch.
+            You are on the Creator demo wallet. <button type="button" className="underline decoration-border-strong underline-offset-4 hover:text-fg" onClick={() => setRole("buyer")}>Switch to Buyer</button> to test the purchase flow.
           </p>
         )}
       </div>
@@ -243,37 +225,15 @@ function GatePage() {
       {isCreator && (
         <section className="space-y-3">
           <h2 className="font-display text-xl tracking-tight">Sales</h2>
-          {sales.length === 0 ? (
-            <p className="text-sm text-muted">
-              No sales yet. Share the link, then switch to Buyer to try it yourself.
-            </p>
-          ) : (
+          {sales.length === 0 ? <p className="text-sm text-muted">No sales yet. Share the latch, then test it from a Buyer wallet.</p> : (
             <ul className="divide-y divide-border rounded-[var(--radius-lg)] bg-surface shadow-[var(--shadow-border)]">
               {sales.map((sale) => (
-                <li
-                  key={sale.id}
-                  className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
-                >
-                  <span className="font-mono text-xs text-muted">
-                    {maskWallet(sale.buyerWallet)}
-                  </span>
-                  <span className="text-muted">
-                    {sale.amount} {sale.currency}
-                  </span>
+                <li key={sale.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
+                  <span className="font-mono text-xs text-muted">{maskWallet(sale.buyerWallet)}</span>
+                  <span className="text-muted">{sale.amount} {sale.currency}</span>
                   <span className="text-subtle">{sale.opens} opens</span>
-                  {sale.refunded ? (
-                    <span className="ml-auto text-xs uppercase tracking-wider text-danger">
-                      Refunded
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => onRefund(sale.id)}
-                      className="ml-auto text-xs text-muted underline-offset-4 hover:text-fg hover:underline"
-                    >
-                      Refund
-                    </button>
+                  {sale.refunded ? <span className="ml-auto text-xs uppercase tracking-wider text-danger">Refunded</span> : (
+                    <button type="button" disabled={busy} onClick={() => onRefund(sale.id)} className="ml-auto text-xs text-muted underline-offset-4 hover:text-fg hover:underline">Refund</button>
                   )}
                 </li>
               ))}
@@ -283,46 +243,18 @@ function GatePage() {
       )}
 
       {payOpen && (
-        <div
-          className="fixed inset-0 z-40 flex items-end justify-center bg-bg/70 p-4 sm:items-center"
-          onClick={() => setPayOpen(false)}
-        >
-          <div
-            className="w-full max-w-sm rounded-[var(--radius-xl)] bg-surface p-5 shadow-[var(--shadow-border)]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted">
-              Confirm in Nimiq Pay
-            </p>
-            <h2 className="mt-2 font-display text-2xl tracking-tight">
-              {formatPrice(gate.priceAmount, gate.priceCurrency)}
-            </h2>
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-bg/70 p-4 sm:items-center" onClick={() => setPayOpen(false)}>
+          <div className="w-full max-w-sm rounded-[var(--radius-xl)] bg-surface p-5 shadow-[var(--shadow-border)]" onClick={(e) => e.stopPropagation()}>
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted">{isPayHost ? "Confirm NIM payment in Nimiq Pay" : "Demo NIM payment"}</p>
+            <h2 className="mt-2 font-display text-2xl tracking-tight">{gate.priceAmount} NIM</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Pays {maskWallet(gate.creatorWallet)} for “{gate.title}”. Access is
-              bound to {maskWallet(address)} · {gate.accessOpens} opens ·{" "}
-              {gate.accessDays} days.
+              Pays {maskWallet(gate.creatorWallet)}. After confirmation, the buyer wallet becomes the access key. The original destination stays server-side.
             </p>
-            {role === "guest" && (
-              <p className="mt-3 text-sm text-muted">
-                Guest has no prior purchase — this is a clean first buy.
-              </p>
-            )}
-            {address === PREVIEW_WALLETS.creator.address && (
-              <p className="mt-3 text-sm text-danger">
-                Switch off the Creator wallet or this will be rejected.
-              </p>
-            )}
+            {role === "guest" && <p className="mt-3 text-sm text-muted">Guest has no prior purchase. This is a clean first buy.</p>}
+            {address === PREVIEW_WALLETS.creator.address && <p className="mt-3 text-sm text-danger">Switch off the Creator demo wallet first.</p>}
             <div className="mt-5 flex gap-2">
-              <Button
-                variant="secondary"
-                className="flex-1"
-                onClick={() => setPayOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button className="flex-1" disabled={busy} onClick={confirmPay}>
-                {busy ? "Paying…" : "Confirm"}
-              </Button>
+              <Button variant="secondary" className="flex-1" onClick={() => setPayOpen(false)}>Cancel</Button>
+              <Button className="flex-1" disabled={busy || isCreator} onClick={confirmPay}>{busy ? "Confirming…" : isPayHost ? "Pay NIM" : "Confirm demo"}</Button>
             </div>
           </div>
         </div>
@@ -331,21 +263,11 @@ function GatePage() {
   );
 }
 
-function Meta({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
+function Meta({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className="rounded-[var(--radius-md)] bg-elevated px-3 py-2.5">
       <dt className="text-[11px] uppercase tracking-[0.14em] text-subtle">{label}</dt>
-      <dd className={`mt-1 font-medium tabular-nums ${accent ? "text-accent" : ""}`}>
-        {value}
-      </dd>
+      <dd className={`mt-1 font-medium tabular-nums ${accent ? "text-accent" : ""}`}>{value}</dd>
     </div>
   );
 }

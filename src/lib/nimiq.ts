@@ -2,9 +2,15 @@ import { init, type NimiqProvider } from "@nimiq/mini-app-sdk";
 
 let providerPromise: Promise<NimiqProvider> | null = null;
 
+type NimiqWindow = Window & {
+  nimiqPay?: unknown;
+  nimiq?: unknown;
+};
+
 export function isNimiqPay(): boolean {
   if (typeof window === "undefined") return false;
-  return Boolean(window.nimiqPay || window.nimiq);
+  const host = window as NimiqWindow;
+  return Boolean(host.nimiqPay || host.nimiq);
 }
 
 export async function getNimiqProvider(): Promise<NimiqProvider> {

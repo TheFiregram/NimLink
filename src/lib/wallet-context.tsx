@@ -12,10 +12,11 @@ import {
   STORAGE_KEY,
   type PreviewRole,
 } from "@/lib/wallets";
+import { getNimiqAddress, isNimiqPay } from "@/lib/nimiq";
 
 type WalletContextValue = {
   address: string;
-  role: PreviewRole;
+  role: PreviewRole | "real";
   isPayHost: boolean;
   setRole: (role: PreviewRole) => void;
   ready: boolean;
@@ -23,43 +24,56 @@ type WalletContextValue = {
 
 const WalletContext = createContext<WalletContextValue | null>(null);
 
-function detectPayHost() {
-  if (typeof window === "undefined") return false;
-  return Boolean(
-    (window as Window & { nimiqPay?: unknown }).nimiqPay ||
-      (window as Window & { nimiq?: unknown }).nimiq,
-  );
-}
-
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const [role, setRoleState] = useState<PreviewRole>("creator");
+  const [role, setRoleState] = useState<PreviewRole | "real">("creator");
+  const [address, setAddress] = useState(PREVIEW_WALLETS.creator.address);
   const [ready, setReady] = useState(false);
   const [isPayHost, setIsPayHost] = useState(false);
 
   useEffect(() => {
-    const hosted = detectPayHost();
-    setIsPayHost(hosted);
-    if (!hosted) {
-      const saved = window.localStorage.getItem(STORAGE_KEY) as PreviewRole | null;
-      if (saved && saved in PREVIEW_WALLETS) setRoleState(saved);
+    let cancelled = false;
+
+    async function connect() {
+      const hosted = isNimiqPay();
+      if (cancelled) return;
+      setIsPayHost(hosted);
+
+      if (hosted) {
+        try {
+          const realAddress = await getNimiqAddress();
+          if (!cancelled) {
+            setAddress(realAddress);
+            setRoleState("real");
+          }
+        } catch {
+          if (!cancelled) setReady(true);
+          return;
+        }
+      } else {
+        const saved = window.localStorage.getItem(STORAGE_KEY) as PreviewRole | null;
+        const next = saved && saved in PREVIEW_WALLETS ? saved : "creator";
+        setRoleState(next);
+        setAddress(PREVIEW_WALLETS[next].address);
+      }
+      if (!cancelled) setReady(true);
     }
-    setReady(true);
+
+    void connect();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const setRole = useCallback((next: PreviewRole) => {
+    if (isPayHost) return;
     setRoleState(next);
+    setAddress(PREVIEW_WALLETS[next].address);
     window.localStorage.setItem(STORAGE_KEY, next);
-  }, []);
+  }, [isPayHost]);
 
   const value = useMemo<WalletContextValue>(
-    () => ({
-      address: PREVIEW_WALLETS[role].address,
-      role,
-      isPayHost,
-      setRole,
-      ready,
-    }),
-    [role, isPayHost, setRole, ready],
+    () => ({ address, role, isPayHost, setRole, ready }),
+    [address, role, isPayHost, setRole, ready],
   );
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;

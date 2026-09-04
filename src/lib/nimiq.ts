@@ -1,5 +1,6 @@
-import { init, type NimiqProvider } from "@nimiq/mini-app-sdk";
+import { init } from "@nimiq/mini-app-sdk";
 
+type NimiqProvider = Awaited<ReturnType<typeof init>>;
 let providerPromise: Promise<NimiqProvider> | null = null;
 
 type NimiqWindow = Window & {
@@ -29,8 +30,6 @@ export async function getNimiqAddress(): Promise<string> {
 export async function sendNimPayment(recipient: string, nimAmount: string): Promise<string> {
   const provider = await getNimiqProvider();
   const value = Math.round(Number(nimAmount) * 100_000);
-  if (!Number.isFinite(value) || value <= 0) {
-    throw new Error("Invalid NIM amount.");
-  }
+  if (!Number.isFinite(value) || value <= 0) throw new Error("Invalid NIM amount.");
   return provider.sendBasicTransaction({ recipient, value });
 }

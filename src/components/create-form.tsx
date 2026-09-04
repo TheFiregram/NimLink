@@ -5,16 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { createGate } from "@/lib/server/gates";
 import { useWallet } from "@/lib/wallet-context";
-import { cn } from "@/lib/utils";
 
 export function CreateForm() {
-  const { address } = useWallet();
+  const { address, isPayHost } = useWallet();
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [destinationUrl, setDestinationUrl] = useState("");
   const [preview, setPreview] = useState("");
   const [priceAmount, setPriceAmount] = useState("2");
-  const [priceCurrency, setPriceCurrency] = useState<"NIM" | "USDT">("USDT");
   const [accessOpens, setAccessOpens] = useState(3);
   const [accessDays, setAccessDays] = useState(7);
   const [busy, setBusy] = useState(false);
@@ -29,13 +27,13 @@ export function CreateForm() {
           preview,
           destinationUrl,
           priceAmount,
-          priceCurrency,
+          priceCurrency: "NIM",
           creatorWallet: address,
           accessOpens,
           accessDays,
         },
       });
-      toast.success("Latch is live.");
+      toast.success("NIM latch is live.");
       await navigate({ to: "/g/$slug", params: { slug: result.slug } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not create latch.");
@@ -74,7 +72,7 @@ export function CreateForm() {
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Price">
+        <Field label="Price in NIM">
           <Input
             required
             value={priceAmount}
@@ -82,23 +80,9 @@ export function CreateForm() {
             inputMode="decimal"
           />
         </Field>
-        <Field label="Currency">
-          <div className="grid grid-cols-2 gap-1 rounded-[var(--radius-sm)] bg-elevated p-1 shadow-[var(--shadow-border)]">
-            {(["USDT", "NIM"] as const).map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setPriceCurrency(c)}
-                className={cn(
-                  "h-9 rounded-[6px] text-sm font-medium",
-                  priceCurrency === c
-                    ? "bg-accent text-accent-fg"
-                    : "text-muted hover:text-fg",
-                )}
-              >
-                {c}
-              </button>
-            ))}
+        <Field label="Payment rail">
+          <div className="flex h-10 items-center justify-center rounded-[var(--radius-sm)] bg-elevated px-3 text-sm font-medium text-accent shadow-[var(--shadow-border)]">
+            Nimiq Pay · NIM
           </div>
         </Field>
       </div>
@@ -124,8 +108,14 @@ export function CreateForm() {
         </Field>
       </div>
 
-      <Button type="submit" size="lg" className="w-full" disabled={busy}>
-        {busy ? "Latching…" : "Create latch"}
+      {!isPayHost && (
+        <p className="rounded-[var(--radius-md)] bg-elevated p-3 text-xs leading-relaxed text-muted">
+          Browser preview mode uses demo wallets. Open the app inside Nimiq Pay for a real wallet and real NIM confirmation.
+        </p>
+      )}
+
+      <Button type="submit" size="lg" className="w-full" disabled={busy || !address}>
+        {busy ? "Latching…" : "Create NIM latch"}
       </Button>
     </form>
   );
